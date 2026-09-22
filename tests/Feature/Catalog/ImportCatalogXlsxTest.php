@@ -6,6 +6,7 @@ use App\Domains\Catalog\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Domains\Catalog\Jobs\GenerateProductEmbeddingJob;
 use App\Domains\Catalog\Models\Product;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Livewire\Livewire;
@@ -14,16 +15,24 @@ use Livewire\Livewire;
  * Ejercita el importador nativo de Filament de punta a punta (modal, mapeo
  * de columnas, cola de procesamiento) con el fixture real de tests/Fixtures.
  *
- * Requiere ext-zip (lectura del .xlsx) y la base de test en Postgres; no se
- * pudo ejecutar en el sandbox de desarrollo por esas dos razones — ver
- * tests/Unit/Catalog/ImportProductsActionXlsxConversionTest.php para el
- * detalle de la limitación de ext-zip.
+ * Requiere ext-zip (lectura del .xlsx) y las migraciones de Filament Actions
+ * publicadas (`php artisan vendor:publish --tag=filament-actions-migrations`).
  */
 beforeEach(function () {
     $this->actingAs(User::factory()->create());
     Redis::shouldReceive('incr')->byDefault();
     Redis::shouldReceive('get')->andReturn(0)->byDefault();
     Redis::shouldReceive('del')->byDefault();
+
+    // Filament guarda getRealPath() del archivo subido en imports.file_path
+    // (varchar 255). El simulador de upload de Livewire codifica hash +
+    // mimeType + size en el nombre físico del archivo, y el mimetype de un
+    // .xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+    // es tan largo que el path se pasa de 255 salvo que la raíz de storage
+    // sea bien corta — no es un problema real de producción (storage_path()
+    // ahí suele ser mucho más corto que este proyecto), así que acá se
+    // acorta solo para el test.
+    $this->app->useStoragePath('/tmp/t'.substr(uniqid(), -6));
 });
 
 it('sube un xlsx, crea y actualiza productos según el mapeo de columnas, y encola la regeneración de embeddings', function () {
@@ -34,7 +43,11 @@ it('sube un xlsx, crea y actualiza productos según el mapeo de columnas, y enco
 
     $existente = Product::factory()->create(['name' => 'Zapatillas Urbanas Runner', 'stock' => 1]);
 
-    $file = fakeTemporaryUploadedFile('catalog-sample.xlsx', 'catalog-sample.xlsx');
+    // Nombre corto a propósito: el simulador de Livewire ya codifica hash +
+    // mimeType + size en el nombre físico (ver comentario en el beforeEach),
+    // así que cuanto más corto el nombre original, más margen para no pasarse
+    // de los 255 caracteres de imports.file_path.
+    $file = UploadedFile::fake()->createWithContent('c.xlsx', fixtureContents('catalog-sample.xlsx'));
 
     Livewire::test(ListProducts::class)
         ->mountTableAction('import')

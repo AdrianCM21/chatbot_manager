@@ -32,6 +32,8 @@ class MessagesChartWidget extends ChartWidget
         ];
     }
 
+    protected static ?string $pollingInterval = '30s';
+
     protected function getData(): array
     {
         [$buckets, $labels] = match ($this->filter) {
@@ -56,20 +58,24 @@ class MessagesChartWidget extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Mensajes recibidos',
+                    'label' => 'Consultas recibidas',
                     'data' => $total,
-                    'borderColor' => '#2563eb',
-                    'backgroundColor' => 'rgba(37, 99, 235, 0.12)',
+                    'borderColor' => '#10b981',
+                    'backgroundColor' => 'rgba(16, 185, 129, 0.14)',
                     'fill' => true,
                     'tension' => 0.35,
+                    'pointBackgroundColor' => '#10b981',
+                    'pointRadius' => 3,
                 ],
                 [
-                    'label' => 'Sin resultado',
+                    'label' => 'Sin producto sugerido',
                     'data' => $sinResultado,
-                    'borderColor' => '#f59e0b',
-                    'backgroundColor' => 'rgba(245, 158, 11, 0.12)',
+                    'borderColor' => '#f43f5e',
+                    'backgroundColor' => 'rgba(244, 63, 94, 0.10)',
                     'fill' => true,
                     'tension' => 0.35,
+                    'pointBackgroundColor' => '#f43f5e',
+                    'pointRadius' => 3,
                 ],
             ],
             'labels' => $labels,

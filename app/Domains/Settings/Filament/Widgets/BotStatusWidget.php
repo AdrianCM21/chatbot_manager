@@ -25,6 +25,8 @@ class BotStatusWidget extends Widget implements HasActions, HasForms
 
     protected static ?int $sort = -2;
 
+    protected static ?string $pollingInterval = '15s';
+
     public function getBotSetting(): BotSetting
     {
         return BotSetting::current();
@@ -36,9 +38,10 @@ class BotStatusWidget extends Widget implements HasActions, HasForms
 
         return Action::make('toggleBot')
             ->label($isEnabled ? 'Pausar bot' : 'Activar bot')
-            ->color($isEnabled ? 'danger' : 'success')
-            ->icon($isEnabled ? 'heroicon-o-pause-circle' : 'heroicon-o-play-circle')
-            ->size('lg')
+            ->color($isEnabled ? 'gray' : 'success')
+            ->outlined($isEnabled)
+            ->icon($isEnabled ? 'heroicon-m-pause' : 'heroicon-m-play')
+            ->size('md')
             ->requiresConfirmation($isEnabled)
             ->modalHeading('¿Pausar el bot de WhatsApp?')
             ->modalDescription('Mientras esté pausado, tus clientes van a dejar de recibir respuestas automáticas por WhatsApp. Vas a poder reactivarlo cuando quieras.')

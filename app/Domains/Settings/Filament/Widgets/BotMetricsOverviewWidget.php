@@ -13,6 +13,8 @@ class BotMetricsOverviewWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = -1;
 
+    protected static ?string $pollingInterval = '15s';
+
     protected function getStats(): array
     {
         $last7Days = $this->last7DaysCounts();
@@ -21,6 +23,16 @@ class BotMetricsOverviewWidget extends StatsOverviewWidget
         $last7Matched = $last7Days->sum('matched');
         $resolutionRate = $last7Total > 0 ? (int) round(($last7Matched / $last7Total) * 100) : null;
         $lastMessage = IncomingMessage::query()->latest()->first();
+
+        $lastMessageValue = $lastMessage
+            ? ($lastMessage->created_at->isToday()
+                ? $lastMessage->created_at->format('H:i \h\s')
+                : $lastMessage->created_at->format('d/m H:i'))
+            : 'Sin actividad';
+
+        $lastMessageDesc = $lastMessage
+            ? 'Hace '.$lastMessage->created_at->diffForHumans(null, true).' • '.$lastMessage->from_number
+            : 'Esperando el primer mensaje';
 
         return [
             Stat::make('Mensajes de hoy', (string) $messagesToday)
@@ -37,9 +49,10 @@ class BotMetricsOverviewWidget extends StatsOverviewWidget
                 ->chart($last7Days->map(fn (array $d) => $d['total'] > 0 ? (int) round(($d['matched'] / $d['total']) * 100) : 0)->all())
                 ->color($resolutionRate === null ? 'gray' : ($resolutionRate >= 70 ? 'success' : 'warning')),
 
-            Stat::make('Último mensaje recibido', $lastMessage?->created_at?->diffForHumans() ?? 'Todavía no llegó ninguno')
-                ->description($lastMessage ? 'de '.$lastMessage->from_number : 'Esperando el primer mensaje')
+            Stat::make('Último mensaje', $lastMessageValue)
+                ->description($lastMessageDesc)
                 ->descriptionIcon('heroicon-m-clock')
+                ->chart($last7Days->pluck('matched')->all())
                 ->color('gray'),
         ];
     }

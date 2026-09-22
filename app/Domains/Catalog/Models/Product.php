@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Catalog\Models;
 
+use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +15,15 @@ class Product extends Model
 {
     use HasFactory;
     use HasNeighbors;
+
+    /**
+     * Al vivir fuera de App\Models, Laravel no adivina la factory por
+     * convención (buscaría Database\Factories\Domains\Catalog\Models\ProductFactory).
+     */
+    protected static function newFactory(): ProductFactory
+    {
+        return ProductFactory::new();
+    }
 
     protected $fillable = [
         'name',

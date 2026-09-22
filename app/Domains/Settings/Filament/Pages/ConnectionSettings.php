@@ -59,9 +59,20 @@ class ConnectionSettings extends Page implements HasActions, HasForms
         return WhatsAppConnectionSetting::current();
     }
 
+    public function getWebhookUrl(): string
+    {
+        return url('/webhooks/whatsapp');
+    }
+
+    public function getWebhookVerifyToken(): string
+    {
+        return (string) config('services.whatsapp.webhook_verify_token');
+    }
+
     public function form(Form $form): Form
     {
         return $form
+            ->columns(['default' => 1, 'sm' => 2])
             ->schema([
                 TextInput::make('access_token')
                     ->label('Token de acceso de WhatsApp')
@@ -73,19 +84,24 @@ class ConnectionSettings extends Page implements HasActions, HasForms
                     ->helperText('Por seguridad, nunca se muestra el token completo una vez guardado.')
                     ->afterStateUpdated(fn () => $this->lastTestSuccessful = false)
                     ->live(onBlur: true)
-                    ->dehydrated(fn (?string $state): bool => filled($state)),
+                    ->dehydrated(fn (?string $state): bool => filled($state))
+                    ->columnSpanFull(),
 
                 TextInput::make('phone_number_id')
                     ->label('ID de número de teléfono')
+                    ->placeholder('Ej: 104523912345678')
                     ->required()
                     ->maxLength(255)
                     ->afterStateUpdated(fn () => $this->lastTestSuccessful = false)
-                    ->live(onBlur: true),
+                    ->live(onBlur: true)
+                    ->columnSpan(['default' => 1]),
 
                 TextInput::make('business_account_id')
                     ->label('ID de cuenta de WhatsApp Business')
+                    ->placeholder('Ej: 103948572819203')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->columnSpan(['default' => 1]),
             ])
             ->statePath('data');
     }

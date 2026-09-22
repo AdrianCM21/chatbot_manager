@@ -16,10 +16,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
  * Este test verifica esa conversión de forma aislada, sin pasar por el
  * modal de Livewire.
  *
- * Requiere la extensión ext-zip (OpenSpout la necesita para leer/escribir
- * XLSX). No se pudo ejecutar en el sandbox de desarrollo por esa razón —
- * el fixture (tests/Fixtures/catalog-sample.xlsx) sí quedó validado como
- * .xlsx real por fuera de PHP (unzip -l / `file`).
+ * Requiere la extensión ext-zip (OpenSpout la necesita para leer/escribir XLSX).
  */
 beforeEach(function () {
     Storage::fake(FileUploadConfiguration::disk());
@@ -28,7 +25,7 @@ beforeEach(function () {
 it('convierte el xlsx a un csv con las mismas columnas y filas', function () {
     $file = fakeTemporaryUploadedFile('catalog-sample.xlsx', 'catalog-sample.xlsx');
 
-    $stream = (new ImportProductsAction)->getUploadedFileStream($file);
+    $stream = ImportProductsAction::make()->getUploadedFileStream($file);
 
     expect($stream)->not->toBeFalse();
 
@@ -50,16 +47,18 @@ it('deja pasar un csv normal sin tocarlo', function () {
     $disk = FileUploadConfiguration::disk();
     $meta = str_replace('/', '_', base64_encode('catalog.csv'));
     $physicalName = Str::random(20).'-meta'.$meta.'-.csv';
-    $relativePath = FileUploadConfiguration::directory().'/'.$physicalName;
 
+    // OJO: createFromLivewire() ya antepone FileUploadConfiguration::directory()
+    // al nombre que le pasemos, así que acá hay que guardar el archivo en esa
+    // ruta completa pero pasarle a createFromLivewire() solo el nombre pelado.
     Storage::disk($disk)->put(
-        $relativePath,
+        FileUploadConfiguration::path($physicalName),
         "Producto,Rubro,Valor,Existencia,Detalle\nMouse,Electrónica,65000,50,Mouse inalámbrico\n"
     );
 
-    $file = TemporaryUploadedFile::createFromLivewire($relativePath);
+    $file = TemporaryUploadedFile::createFromLivewire($physicalName);
 
-    $stream = (new ImportProductsAction)->getUploadedFileStream($file);
+    $stream = ImportProductsAction::make()->getUploadedFileStream($file);
 
     $csv = CsvReader::createFromStream($stream);
     $csv->setHeaderOffset(0);

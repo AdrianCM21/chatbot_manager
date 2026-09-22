@@ -84,12 +84,17 @@ function postWhatsAppWebhook(array $payload, ?string $appSecret = null): TestRes
  */
 function fakeTemporaryUploadedFile(string $fixtureName, string $originalName): \Livewire\Features\SupportFileUploads\TemporaryUploadedFile
 {
-    $disk = \Livewire\Features\SupportFileUploads\FileUploadConfiguration::disk();
+    // TemporaryUploadedFile::createFromLivewire() ya antepone el directorio
+    // configurado (FileUploadConfiguration::path()) al nombre que le pasemos:
+    // si nosotros también lo anteponemos acá, queda duplicado
+    // ("livewire-tmp/livewire-tmp/...") y el archivo "no existe".
+    \Illuminate\Support\Facades\Storage::fake(\Livewire\Features\SupportFileUploads\FileUploadConfiguration::disk());
+
     $meta = str_replace('/', '_', base64_encode($originalName));
     $physicalName = \Illuminate\Support\Str::random(20).'-meta'.$meta.'-.'.pathinfo($originalName, PATHINFO_EXTENSION);
-    $relativePath = \Livewire\Features\SupportFileUploads\FileUploadConfiguration::directory().'/'.$physicalName;
 
-    \Illuminate\Support\Facades\Storage::disk($disk)->put($relativePath, fixtureContents($fixtureName));
+    \Illuminate\Support\Facades\Storage::disk(\Livewire\Features\SupportFileUploads\FileUploadConfiguration::disk())
+        ->put(\Livewire\Features\SupportFileUploads\FileUploadConfiguration::path($physicalName), fixtureContents($fixtureName));
 
-    return \Livewire\Features\SupportFileUploads\TemporaryUploadedFile::createFromLivewire($relativePath);
+    return \Livewire\Features\SupportFileUploads\TemporaryUploadedFile::createFromLivewire($physicalName);
 }
