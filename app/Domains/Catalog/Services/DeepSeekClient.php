@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace App\Domains\Catalog\Services;
 
-use OpenAI;
-use OpenAI\Client;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Http;
 
 /**
- * Wrapper sobre la API de DeepSeek (compatible con el formato OpenAI).
+ * Wrapper sobre la API de DeepSeek (compatible con el formato OpenAI) usando
+ * el cliente Http de Laravel, para que Http::fake() pueda mockearla en tests.
  */
 class DeepSeekClient
 {
-    private Client $client;
-
-    public function __construct()
+    private function client(): PendingRequest
     {
         $baseUrl = rtrim((string) config('services.deepseek.base_url'), '/');
+        $baseUrl = str_ends_with($baseUrl, '/v1') ? $baseUrl : "{$baseUrl}/v1";
 
-        $this->client = OpenAI::factory()
-            ->withApiKey((string) config('services.deepseek.api_key'))
-            ->withBaseUri(str_ends_with($baseUrl, '/v1') ? $baseUrl : "{$baseUrl}/v1")
-            ->make();
+        return Http::baseUrl($baseUrl)
+            ->withToken((string) config('services.deepseek.api_key'))
+            ->acceptJson();
     }
 
     /**
@@ -30,7 +29,7 @@ class DeepSeekClient
      */
     public function interpretSearchQuery(string $message): string
     {
-        $response = $this->client->chat()->create([
+        $response = $this->client()->post('/chat/completions', [
             'model' => config('services.deepseek.chat_model'),
             'messages' => [
                 [
@@ -40,9 +39,9 @@ class DeepSeekClient
                 ],
                 ['role' => 'user', 'content' => $message],
             ],
-        ]);
+        ])->throw();
 
-        return trim($response->choices[0]->message->content ?? $message);
+        return trim($response->json('choices.0.message.content') ?? $message);
     }
 
     /**
@@ -50,7 +49,7 @@ class DeepSeekClient
      */
     public function describeProductImage(string $imageBase64, string $mimeType = 'image/jpeg'): string
     {
-        $response = $this->client->chat()->create([
+        $response = $this->client()->post('/chat/completions', [
             'model' => config('services.deepseek.vision_model'),
             'messages' => [
                 [
@@ -68,9 +67,9 @@ class DeepSeekClient
                     ],
                 ],
             ],
-        ]);
+        ])->throw();
 
-        return trim($response->choices[0]->message->content ?? '');
+        return trim($response->json('choices.0.message.content') ?? '');
     }
 
     /**
@@ -78,11 +77,11 @@ class DeepSeekClient
      */
     public function embed(string $text): array
     {
-        $response = $this->client->embeddings()->create([
+        $response = $this->client()->post('/embeddings', [
             'model' => config('services.deepseek.embedding_model'),
             'input' => $text,
-        ]);
+        ])->throw();
 
-        return $response->embeddings[0]->embedding ?? [];
+        return $response->json('data.0.embedding') ?? [];
     }
 }

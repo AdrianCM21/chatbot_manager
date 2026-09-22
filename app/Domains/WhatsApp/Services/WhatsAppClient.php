@@ -4,14 +4,31 @@ declare(strict_types=1);
 
 namespace App\Domains\WhatsApp\Services;
 
+use App\Domains\Settings\Models\WhatsAppConnectionSetting;
 use App\Domains\WhatsApp\Exceptions\WhatsAppApiException;
 use Illuminate\Support\Facades\Http;
 
 /**
  * Wrapper sobre la WhatsApp Cloud API (Meta) para mensajería y descarga de media.
+ *
+ * El token y el phone_number_id se cargan desde la configuración guardada en el
+ * panel admin (Settings > Conexión con WhatsApp); las variables de entorno solo
+ * sirven de fallback para entornos sin esa configuración cargada todavía.
  */
 class WhatsAppClient
 {
+    private function accessToken(): string
+    {
+        return WhatsAppConnectionSetting::current()->access_token
+            ?? (string) config('services.whatsapp.access_token');
+    }
+
+    private function phoneNumberId(): string
+    {
+        return WhatsAppConnectionSetting::current()->phone_number_id
+            ?? (string) config('services.whatsapp.phone_number_id');
+    }
+
     public function sendTextMessage(string $to, string $body): void
     {
         $this->post('messages', [
@@ -43,15 +60,16 @@ class WhatsAppClient
     public function downloadMedia(string $mediaId): array
     {
         $baseUrl = rtrim((string) config('services.whatsapp.base_url'), '/');
+        $accessToken = $this->accessToken();
 
-        $meta = Http::withToken((string) config('services.whatsapp.access_token'))
+        $meta = Http::withToken($accessToken)
             ->get("{$baseUrl}/{$mediaId}");
 
         if ($meta->failed()) {
             throw new WhatsAppApiException('No se pudo resolver la URL del media de WhatsApp.');
         }
 
-        $binary = Http::withToken((string) config('services.whatsapp.access_token'))
+        $binary = Http::withToken($accessToken)
             ->get($meta->json('url'));
 
         if ($binary->failed()) {
@@ -66,11 +84,10 @@ class WhatsAppClient
 
     private function post(string $endpoint, array $payload): void
     {
-        $phoneNumberId = config('services.whatsapp.phone_number_id');
         $baseUrl = rtrim((string) config('services.whatsapp.base_url'), '/');
 
-        $response = Http::withToken((string) config('services.whatsapp.access_token'))
-            ->post("{$baseUrl}/{$phoneNumberId}/{$endpoint}", $payload);
+        $response = Http::withToken($this->accessToken())
+            ->post("{$baseUrl}/{$this->phoneNumberId()}/{$endpoint}", $payload);
 
         if ($response->failed()) {
             throw new WhatsAppApiException('Error al enviar mensaje por WhatsApp: '.$response->body());

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domains\Catalog\Filament\Resources;
 
-use App\Domains\Catalog\Actions\GenerateProductEmbeddingAction;
+use App\Domains\Catalog\Filament\Actions\ImportProductsAction;
 use App\Domains\Catalog\Filament\Resources\ProductResource\Pages;
+use App\Domains\Catalog\Imports\ProductImporter;
+use App\Domains\Catalog\Jobs\GenerateProductEmbeddingJob;
 use App\Domains\Catalog\Models\Product;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
@@ -17,6 +19,8 @@ use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\TextInputColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class ProductResource extends Resource
@@ -24,6 +28,8 @@ class ProductResource extends Resource
     protected static ?string $model = Product::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+
+    protected static ?string $navigationGroup = 'Catálogo';
 
     protected static ?string $modelLabel = 'Producto';
 
@@ -85,27 +91,45 @@ class ProductResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('price')
+                TextInputColumn::make('price')
                     ->label('Precio')
-                    ->money('PYG')
+                    ->type('number')
+                    ->rules(['required', 'numeric', 'min:0'])
                     ->sortable(),
 
-                TextColumn::make('stock')
+                TextInputColumn::make('stock')
                     ->label('Stock')
+                    ->type('number')
+                    ->rules(['required', 'integer', 'min:0'])
                     ->sortable(),
 
                 TextColumn::make('embedding')
-                    ->label('Embedding')
-                    ->state(fn (Product $record): string => $record->embedding ? 'Generado' : 'Pendiente')
+                    ->label('Disponible en el bot')
+                    ->state(fn (Product $record): string => $record->embedding ? 'Sí' : 'Actualizando…')
                     ->badge()
                     ->color(fn (Product $record): string => $record->embedding ? 'success' : 'warning'),
             ])
-            ->filters([])
+            ->filters([
+                SelectFilter::make('category')
+                    ->label('Categoría')
+                    ->options(fn (): array => Product::query()
+                        ->whereNotNull('category')
+                        ->distinct()
+                        ->orderBy('category')
+                        ->pluck('category', 'category')
+                        ->all()),
+            ])
+            ->headerActions([
+                ImportProductsAction::make()
+                    ->importer(ProductImporter::class)
+                    ->label('Importar catálogo'),
+            ])
             ->actions([
-                Action::make('regenerateEmbedding')
-                    ->label('Regenerar embedding')
+                Action::make('resyncWithBot')
+                    ->label('Sincronizar con el bot')
                     ->icon('heroicon-o-arrow-path')
-                    ->action(fn (Product $record) => app(GenerateProductEmbeddingAction::class)->execute($record)),
+                    ->color('gray')
+                    ->action(fn (Product $record) => GenerateProductEmbeddingJob::dispatch($record)),
                 EditAction::make(),
                 DeleteAction::make(),
             ]);

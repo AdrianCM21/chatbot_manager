@@ -7,6 +7,7 @@ namespace App\Domains\WhatsApp\Jobs;
 use App\Domains\Catalog\Actions\IdentifyProductFromImageAction;
 use App\Domains\Catalog\Actions\SearchProductsBySemanticQueryAction;
 use App\Domains\WhatsApp\Actions\SendProductSuggestionsReplyAction;
+use App\Domains\WhatsApp\Models\IncomingMessage;
 use App\Domains\WhatsApp\Services\WhatsAppClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -40,12 +41,24 @@ class ProcessIncomingWhatsAppMessageJob implements ShouldQueue
                 continue;
             }
 
+            $type = $message['type'] ?? null;
+
+            if (! in_array($type, ['text', 'image'], true)) {
+                continue;
+            }
+
             try {
-                $products = match ($message['type'] ?? null) {
+                $products = match ($type) {
                     'text' => $searchProducts->execute($message['text']['body'] ?? ''),
                     'image' => $this->handleImageMessage($message, $whatsApp, $identifyProduct),
-                    default => null,
                 };
+
+                IncomingMessage::create([
+                    'from_number' => $from,
+                    'type' => $type,
+                    'body' => $type === 'text' ? ($message['text']['body'] ?? null) : null,
+                    'matched_products_count' => $products?->count() ?? 0,
+                ]);
 
                 if ($products === null) {
                     continue;

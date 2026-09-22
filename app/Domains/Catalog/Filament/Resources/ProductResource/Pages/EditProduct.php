@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Catalog\Filament\Resources\ProductResource\Pages;
 
-use App\Domains\Catalog\Actions\GenerateProductEmbeddingAction;
 use App\Domains\Catalog\Filament\Resources\ProductResource;
+use App\Domains\Catalog\Jobs\GenerateProductEmbeddingJob;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -22,6 +22,6 @@ class EditProduct extends EditRecord
 
     protected function afterSave(): void
     {
-        app(GenerateProductEmbeddingAction::class)->execute($this->record);
+        GenerateProductEmbeddingJob::dispatch($this->record);
     }
 }
