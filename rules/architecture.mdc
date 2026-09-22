@@ -1,0 +1,50 @@
+---
+description: Estructura de carpetas por dominio (Domain-Driven folders) para este proyecto
+globs: app/Domains/**/*.php
+alwaysApply: true
+---
+
+# Arquitectura por dominios
+
+Cada feature vive en `app/Domains/{Dominio}/`, auto-registrada por
+`App\Providers\DomainRegistryServiceProvider` (busca
+`App\Domains\{Dominio}\{Dominio}ServiceProvider`, cero registro manual).
+
+## Estructura obligatoria
+
+```
+app/Domains/{Dominio}/
+├── Actions/                      # {Verbo}{Entidad}Action, execute()/handle()
+├── Http/
+│   ├── Controllers/Web/          # invokable, __invoke, máx ~10 líneas, solo orquesta
+│   └── Requests/                 # {Verbo}{Entidad}Request — validación + mensajes ES
+├── Models/
+├── {Dominio}ServiceProvider.php  # extends Shared\Providers\DomainServiceProvider
+└── routes.php
+```
+
+## Estructura opcional (solo si hay código real que la justifique)
+
+- `Console/` — comandos artisan del dominio.
+- `Policies/` — autorización, registradas en `policies()` del ServiceProvider.
+- `Http/Resources/` — solo si hay API JSON con forma propia.
+- `Http/Controllers/Api/` — solo si el dominio expone API.
+- `DTOs/` — solo si una Action necesita pasar datos estructurados entre capas.
+- `Events/` / `Listeners/` — solo si hay efectos secundarios desacoplados reales.
+- `Services/` — solo para wrappers de integraciones externas (ej. cliente HTTP de un proveedor).
+- `Jobs/` — trabajo asíncrono en cola.
+- `Database/Migrations/` — si el dominio prefiere mantener sus propias migraciones en vez de `database/migrations`.
+
+**Regla de oro: si una capa no aporta valor, no la crees.** Nunca carpetas vacías.
+
+## Tabla: ¿cuándo sí / cuándo no?
+
+| Capa | Cuándo sí | Cuándo no |
+|---|---|---|
+| FormRequest | Hay input de usuario que validar | Endpoint sin input (ej. webhook firmado) — usar validación manual en la Action |
+| DTO | La Action recibe/devuelve datos con forma no trivial | Un array simple o el propio modelo alcanzan |
+| Action | Hay una operación de negocio con nombre propio | La operación es un CRUD trivial de un solo modelo — puede ir directo en el controller |
+| Service | Hay que envolver una integración externa (API de terceros) | Es lógica de negocio interna → eso es una Action |
+| Event/Listener | Varios efectos secundarios desacoplados deben reaccionar a un hecho | Un solo efecto secuencial → llamarlo directo desde la Action |
+| Resource | Hay API JSON con forma propia distinta al modelo | Vista Blade/Livewire o panel Filament (usan el modelo directo) |
+| Policy | Hay reglas de autorización sobre el modelo | El modelo es de solo administración vía Filament con guard propio |

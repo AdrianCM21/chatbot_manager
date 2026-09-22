@@ -1,0 +1,21 @@
+---
+description: Estándares de código PHP/Laravel para este proyecto
+globs: app/**/*.php
+alwaysApply: true
+---
+
+# Coding standards
+
+- PHP 8.3+. `declare(strict_types=1);` obligatorio en todo archivo PHP nuevo.
+- Naming por tipo:
+  - Actions: `{Verbo}{Entidad}Action` (ej. `SearchProductsBySemanticQueryAction`), método público `execute()` o `handle()`.
+  - Form Requests: `{Verbo}{Entidad}Request` (ej. `StoreProductRequest`).
+  - DTOs: `{Entidad}Data` o `{Verbo}{Entidad}Data`.
+  - Services: `{Entidad}Service` o `{Proveedor}Client` para wrappers de APIs externas (ej. `DeepSeekClient`, `WhatsAppClient`).
+  - Events: nombre en pasado (ej. `ProductEmbeddingWasGenerated`, `WhatsAppMessageWasReceived`).
+  - Jobs: `{Verbo}{Entidad}Job` (ej. `ProcessIncomingWhatsAppMessageJob`).
+- Controllers **invokable**, `__invoke()`, máximo ~10 líneas. Solo orquestan: validan (vía FormRequest), llaman una Action/Service, devuelven una respuesta. Nunca queries directas en el controller.
+- Form Requests: reglas de validación + `messages()` en español.
+- Nunca lógica de negocio en modelos Eloquent más allá de relaciones, scopes, casts y accessors triviales.
+- Tipar siempre: parámetros, retornos, propiedades. Evitar `mixed` salvo que sea genuinamente necesario.
+- Antes de escribir un helper genérico (validador, formateador, chequeo de tipo), revisar `app/Shared/Support/` — si ya existe, reutilizar; si no, crearlo ahí (nunca mezclado con lógica de una feature).

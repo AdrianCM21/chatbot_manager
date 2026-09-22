@@ -1,0 +1,36 @@
+---
+description: Flujo de trabajo para implementar features en este proyecto
+globs: app/Domains/**/*.php
+alwaysApply: true
+---
+
+# Workflow de implementación
+
+## Cuándo planificar según tamaño
+
+- **Trivial** (1 archivo, sin lógica nueva: ajustar validación, copy, config): implementar directo, sin plan previo.
+- **Mediano** (1 dominio, 2-5 archivos nuevos: nueva Action + ruta + vista/endpoint): listar los archivos a tocar antes de escribir código.
+- **Grande** (nuevo dominio, o cambios que cruzan varios dominios): plan explícito con el usuario antes de tocar código — estructura de carpetas, modelos, migraciones, puntos de integración.
+
+## Orden de implementación fijo
+
+1. **Policy** (si el modelo requiere autorización).
+2. **FormRequest** (si hay input de usuario) y/o **Action** (la operación de negocio).
+3. **Controller** invokable que orquesta Request → Action → respuesta.
+4. **Resource** (solo si hay API JSON con forma propia).
+5. **Ruta** en `routes.php` del dominio.
+6. **Vista** (Blade/Livewire) o **recurso Filament**, si aplica.
+7. **Tests**.
+
+## Qué requiere test y qué no
+
+| Elemento | Test |
+|---|---|
+| Action con lógica de negocio (cálculos, decisiones, side effects) | Sí — unit o feature test |
+| FormRequest con reglas no triviales | Sí — casos válidos/inválidos |
+| Controller invokable (solo orquesta) | Sí, vía feature test del endpoint completo (cubre implícitamente el controller) |
+| Job de cola | Sí — test de que dispatch ocurre y de la lógica interna vía `Bus::fake()` / ejecución directa |
+| Policy | Sí — casos permitido/denegado |
+| Recurso Filament (CRUD estándar sin lógica propia) | No, salvo que tenga acciones/validaciones custom |
+| Getters/setters/accessors triviales de modelo | No |
+| Migraciones | No (se validan al correr) |
