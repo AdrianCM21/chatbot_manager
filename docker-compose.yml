@@ -4,6 +4,10 @@ x-app-env: &app-env
   APP_KEY: ${APP_KEY}
   APP_DEBUG: ${APP_DEBUG:-false}
   APP_URL: ${APP_URL:-http://localhost:8000}
+  # Traefik (Dokploy) ya termina TLS por afuera y manda HTTP plano al contenedor.
+  # Sin esto, Caddy activa su HTTPS automático acá adentro también y entra en
+  # loop de redirect (HTTP -> HTTPS -> HTTP -> ...).
+  SERVER_NAME: ":80"
   DB_CONNECTION: pgsql
   DB_HOST: ${DB_HOST}
   DB_PORT: ${DB_PORT:-5432}
