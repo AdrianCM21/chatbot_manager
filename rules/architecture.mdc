@@ -6,9 +6,9 @@ alwaysApply: true
 
 # Arquitectura por dominios
 
-Cada feature vive en `app/Domains/{Dominio}/`, auto-registrada por
-`App\Providers\DomainRegistryServiceProvider` (busca
-`App\Domains\{Dominio}\{Dominio}ServiceProvider`, cero registro manual).
+Cada feature vive en `app/Domains/{Dominio}/`. Su `{Dominio}ServiceProvider`
+extiende `Illuminate\Support\ServiceProvider` directo y se registra a mano en
+`bootstrap/providers.php`.
 
 ## Estructura obligatoria
 
@@ -19,7 +19,7 @@ app/Domains/{Dominio}/
 │   ├── Controllers/Web/          # invokable, __invoke, máx ~10 líneas, solo orquesta
 │   └── Requests/                 # {Verbo}{Entidad}Request — validación + mensajes ES
 ├── Models/
-├── {Dominio}ServiceProvider.php  # extends Shared\Providers\DomainServiceProvider
+├── {Dominio}ServiceProvider.php  # extends Illuminate\Support\ServiceProvider
 └── routes.php
 ```
 

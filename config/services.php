@@ -46,7 +46,10 @@ return [
         // si no existe, cambiar el proveedor de embeddings en
         // App\Domains\Catalog\Services\EmbeddingClient.
         'embedding_model' => env('DEEPSEEK_EMBEDDING_MODEL', 'deepseek-embedding'),
-        'embedding_dimensions' => env('DEEPSEEK_EMBEDDING_DIMENSIONS', 1536),
+        // No es variable de entorno a propósito: la columna vector() de products
+        // ya quedó creada con esta dimensión en la migración. Cambiarla acá sin
+        // una migración nueva desalinea el schema.
+        'embedding_dimensions' => 1536,
     ],
 
     'whatsapp' => [

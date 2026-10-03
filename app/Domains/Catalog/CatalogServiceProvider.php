@@ -6,19 +6,15 @@ namespace App\Domains\Catalog;
 
 use App\Domains\Catalog\Models\Product;
 use App\Domains\Catalog\Policies\ProductPolicy;
-use App\Shared\Providers\DomainServiceProvider;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
 
-class CatalogServiceProvider extends DomainServiceProvider
+class CatalogServiceProvider extends ServiceProvider
 {
-    protected function domainPath(): string
+    public function boot(): void
     {
-        return __DIR__;
-    }
+        Gate::policy(Product::class, ProductPolicy::class);
 
-    protected function policies(): array
-    {
-        return [
-            Product::class => ProductPolicy::class,
-        ];
+        $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
     }
 }

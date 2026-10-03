@@ -1,9 +1,7 @@
 <?php
 
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
-use Tests\DuskTestCase;
 use Tests\TestCase;
 
 /*
@@ -18,11 +16,6 @@ use Tests\TestCase;
 */
 
 uses(TestCase::class, RefreshDatabase::class)->in('Feature', 'Unit');
-
-// tests/Browser (Dusk) arranca un navegador real contra un servidor real, en
-// un proceso PHP distinto al del test: no puede compartir la transacción de
-// RefreshDatabase, así que usa DatabaseMigrations (migra/limpia de verdad).
-uses(DuskTestCase::class, DatabaseMigrations::class)->in('Browser');
 
 /*
 |--------------------------------------------------------------------------

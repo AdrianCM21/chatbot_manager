@@ -42,9 +42,6 @@ COPY . .
 # Copy Vite built frontend assets from Stage 1
 COPY --from=node_builder /app/public/build ./public/build
 
-# Dump optimized autoload and publish filament assets
-RUN composer dump-autoload --optimize --no-dev
-
 # Setup entrypoint and set permissions for storage and cache
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \

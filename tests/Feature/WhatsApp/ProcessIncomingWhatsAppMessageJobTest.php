@@ -25,7 +25,7 @@ it('interpreta el mensaje de texto, busca productos en el catálogo y responde p
             ['message' => ['content' => 'auriculares bluetooth']],
         ]]),
         '*/v1/embeddings' => Http::response(['data' => [
-            ['embedding' => array_fill(0, 8, 0.1)],
+            ['embedding' => array_fill(0, config('services.deepseek.embedding_dimensions'), 0.1)],
         ]]),
         '*/messages' => Http::response(['messages' => [['id' => 'wamid.OUT']]]),
     ]);
@@ -55,7 +55,7 @@ it('descarga el media, identifica el producto de la foto y responde por WhatsApp
             ['message' => ['content' => 'auriculares negros']],
         ]]),
         '*/v1/embeddings' => Http::response(['data' => [
-            ['embedding' => array_fill(0, 8, 0.2)],
+            ['embedding' => array_fill(0, config('services.deepseek.embedding_dimensions'), 0.2)],
         ]]),
         '*/messages' => Http::response(['messages' => [['id' => 'wamid.OUT']]]),
     ]);
@@ -78,7 +78,7 @@ it('avisa que no encontró productos cuando el catálogo está vacío', function
             ['message' => ['content' => 'algo que no está en el catálogo']],
         ]]),
         '*/v1/embeddings' => Http::response(['data' => [
-            ['embedding' => array_fill(0, 8, 0.1)],
+            ['embedding' => array_fill(0, config('services.deepseek.embedding_dimensions'), 0.1)],
         ]]),
         '*/messages' => Http::response(['messages' => [['id' => 'wamid.OUT']]]),
     ]);

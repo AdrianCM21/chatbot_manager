@@ -7,6 +7,14 @@ use App\Domains\Catalog\Models\Product;
 use App\Domains\Catalog\Services\DeepSeekClient;
 use Illuminate\Support\Facades\DB;
 
+function vectorWithOneAt(int $index): array
+{
+    $vector = array_fill(0, config('services.deepseek.embedding_dimensions'), 0.0);
+    $vector[$index] = 1.0;
+
+    return $vector;
+}
+
 it('arma la query con el operador de distancia coseno sobre la columna embedding', function () {
     $deepSeek = Mockery::mock(DeepSeekClient::class);
     $deepSeek->shouldReceive('interpretSearchQuery')->once()
@@ -14,7 +22,7 @@ it('arma la query con el operador de distancia coseno sobre la columna embedding
         ->andReturn('zapatillas negras');
     $deepSeek->shouldReceive('embed')->once()
         ->with('zapatillas negras')
-        ->andReturn(array_fill(0, 8, 0.1));
+        ->andReturn(array_fill(0, config('services.deepseek.embedding_dimensions'), 0.1));
 
     $this->instance(DeepSeekClient::class, $deepSeek);
 
@@ -40,7 +48,7 @@ it('arma la query con el operador de distancia coseno sobre la columna embedding
 it('respeta el límite de resultados pedido', function () {
     $this->instance(DeepSeekClient::class, Mockery::mock(DeepSeekClient::class, function ($mock) {
         $mock->shouldReceive('interpretSearchQuery')->andReturnUsing(fn (string $q) => $q);
-        $mock->shouldReceive('embed')->andReturn(array_fill(0, 8, 0.1));
+        $mock->shouldReceive('embed')->andReturn(array_fill(0, config('services.deepseek.embedding_dimensions'), 0.1));
     }));
 
     Product::factory()->count(5)->withEmbedding()->create();
@@ -53,11 +61,11 @@ it('respeta el límite de resultados pedido', function () {
 it('devuelve los productos ordenados del más cercano al más lejano según el embedding', function () {
     $this->instance(DeepSeekClient::class, Mockery::mock(DeepSeekClient::class, function ($mock) {
         $mock->shouldReceive('interpretSearchQuery')->andReturnUsing(fn (string $q) => $q);
-        $mock->shouldReceive('embed')->andReturn([1, 0, 0, 0, 0, 0, 0, 0]);
+        $mock->shouldReceive('embed')->andReturn(vectorWithOneAt(0));
     }));
 
-    $lejano = Product::factory()->withEmbedding([0, 1, 0, 0, 0, 0, 0, 0])->create(['name' => 'Producto lejano']);
-    $cercano = Product::factory()->withEmbedding([1, 0, 0, 0, 0, 0, 0, 0])->create(['name' => 'Producto cercano']);
+    $lejano = Product::factory()->withEmbedding(vectorWithOneAt(1))->create(['name' => 'Producto lejano']);
+    $cercano = Product::factory()->withEmbedding(vectorWithOneAt(0))->create(['name' => 'Producto cercano']);
 
     $results = app(SearchProductsBySemanticQueryAction::class)->execute('busqueda');
 
@@ -68,7 +76,7 @@ it('devuelve los productos ordenados del más cercano al más lejano según el e
 it('no incluye productos sin embedding todavía generado', function () {
     $this->instance(DeepSeekClient::class, Mockery::mock(DeepSeekClient::class, function ($mock) {
         $mock->shouldReceive('interpretSearchQuery')->andReturnUsing(fn (string $q) => $q);
-        $mock->shouldReceive('embed')->andReturn(array_fill(0, 8, 0.1));
+        $mock->shouldReceive('embed')->andReturn(array_fill(0, config('services.deepseek.embedding_dimensions'), 0.1));
     }));
 
     Product::factory()->create(['name' => 'Sin embedding', 'embedding' => null]);

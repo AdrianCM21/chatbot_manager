@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Settings;
 
-use App\Shared\Providers\DomainServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
-class SettingsServiceProvider extends DomainServiceProvider
+class SettingsServiceProvider extends ServiceProvider
 {
-    protected function domainPath(): string
+    public function boot(): void
     {
-        return __DIR__;
+        $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
     }
 }
