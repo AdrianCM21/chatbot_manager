@@ -37,6 +37,8 @@ services:
     environment: *app-env
     volumes:
       - storage_data:/app/storage/app/public
+    networks:
+      - dokploy-network
 
   worker:
     build:
@@ -48,6 +50,12 @@ services:
     environment: *app-env
     volumes:
       - storage_data:/app/storage/app/public
+    networks:
+      - dokploy-network
 
 volumes:
   storage_data:
+
+networks:
+  dokploy-network:
+    external: true

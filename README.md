@@ -126,6 +126,12 @@ Entrá a `http://localhost:8000/admin` con el usuario que creaste en el paso 6.
 aparte (por ejemplo por Dockploy). `DB_HOST`, `DB_PASSWORD`, `REDIS_HOST` y `APP_KEY` son
 obligatorios y deben apuntar a esos servicios administrados, no a contenedores locales.
 
+En **Dokploy**, las bases de datos creadas con su gestor nativo se unen solas a la red
+`dokploy-network`; un stack de Compose propio no, a menos que se declare explícito (por eso
+`app` y `worker` declaran `networks: [dokploy-network]` como `external: true` al final del
+archivo). Sin esto, el contenedor no resuelve el hostname interno de la base aunque esté en
+el mismo proyecto de Dokploy.
+
 ## Tests
 
 Suite con [Pest](https://pestphp.com) contra Postgres real (`products.embedding` es
